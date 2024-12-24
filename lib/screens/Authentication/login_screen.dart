@@ -289,7 +289,7 @@ class _LoginScreenState extends State<LoginScreen> {
           await FirebaseAuth.instance.signInWithCredential(credential);
 
       if (userCredential.user != null) {
-        showCustomDelightToastBar(context, "Login Successful !");
+        showCustomDelightToastBar(context, "Login in google Successful !");
 
         //Chuyen scren qa home
         loadingScreen(
@@ -312,6 +312,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final OAuthCredential facebookAuthCredential =
         FacebookAuthProvider.credential(
             '${loginResult.accessToken?.tokenString}');
+    //
+    showCustomDelightToastBar(context, "Login in facebook Successful !");
     //Chuyen scren qa home
     loadingScreen(
       context,

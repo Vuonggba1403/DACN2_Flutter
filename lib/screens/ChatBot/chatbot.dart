@@ -3,9 +3,9 @@ import 'dart:typed_data';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:dash_chat_2/dash_chat_2.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../utils/colors.dart';
 
@@ -21,10 +21,7 @@ final Gemini gemini = Gemini.instance;
 List<ChatMessage> messages = [];
 
 class _GeminiChatState extends State<ChatBot> {
-  // Tạo biến user để trò chuyện
   ChatUser? currentUser;
-
-  // Tạo biến đại diện cho Gemini bot
   final ChatUser geminiUser = ChatUser(
     id: "1",
     firstName: "IVIVU Digibot",
@@ -34,9 +31,10 @@ class _GeminiChatState extends State<ChatBot> {
   @override
   void initState() {
     super.initState();
-    _promptForName(); // Hiển thị dialog để nhập tên khi khởi động
+    _promptForName(); //Goi hop thoai nhap ten nguoi dung
   }
 
+// Nhap ten nguoi dung
   void _promptForName() {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       String? userName = await showDialog<String>(
@@ -51,7 +49,6 @@ class _GeminiChatState extends State<ChatBot> {
             title: const Center(child: Text("Enter Your Name")),
             content: Container(
               decoration: BoxDecoration(
-                // color: Colors.white,
                 border: Border.all(color: ColorIcon),
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -67,15 +64,9 @@ class _GeminiChatState extends State<ChatBot> {
               ),
             ),
             actions: [
-              // ElevatedButton(
-              //   onPressed: () {
-              //     Navigator.of(context).pop(nameInput); // Trả về tên đã nhập
-              //   },
-              //   child: const Text("OK"),
-              // ),
               GestureDetector(
                 onTap: () {
-                  Navigator.of(context).pop(nameInput); // Trả về tên đã nhập
+                  Navigator.of(context).pop(nameInput);
                 },
                 child: Container(
                   width: double.infinity,
@@ -104,19 +95,16 @@ class _GeminiChatState extends State<ChatBot> {
             id: "0",
             firstName: userName.trim(),
           );
-
-          // Gửi tin nhắn chào mừng từ bot
           _sendWelcomeMessage(userName.trim());
         });
       } else {
-        // Nếu tên không hợp lệ, yêu cầu nhập lại
         _promptForName();
       }
     });
   }
 
+// Gui tin chao
   void _sendWelcomeMessage(String userName) {
-    // Tạo nội dung tin nhắn chào mừng
     String welcomeMessage = "Xin chào $userName! \n"
         "Anh/Chị đang được hỗ trợ bởi Trợ lý ảo IVUVU Digibot. \n"
         "Để được hỗ trợ tốt nhất Anh/Chị vui lòng đặt các câu hỏi ngắn gọn, dễ hiểu 👇 ";
@@ -155,13 +143,12 @@ class _GeminiChatState extends State<ChatBot> {
         backgroundColor: accentYellowColor,
       ),
       body: currentUser == null
-          ? const Center(
-              child:
-                  CircularProgressIndicator()) // Hiển thị chờ khi chưa nhập tên
+          ? const Center(child: CircularProgressIndicator())
           : _buildUI(),
     );
   }
 
+// Xuất giao diện chat
   Widget _buildUI() {
     return DashChat(
       inputOptions: InputOptions(trailing: [
@@ -171,24 +158,89 @@ class _GeminiChatState extends State<ChatBot> {
         )
       ]),
       currentUser: currentUser!,
-      onSend: _sendMessage,
-      messages: messages,
+      onSend: _sendMessage, // Hàm gửi tin nhắn
+      messages: messages, // Danh sách tin nhắn
     );
   }
 
-  // Hàm gửi tin nhắn
-  void _sendMessage(ChatMessage chatMessage) {
+  // Hàm tìm kiếm khách sạn theo địa điểm
+  Future<void> _searchHotels(String placed) async {
+    try {
+      // Truy vấn Firestore dựa trên trường `placed`
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('hotel') // Tên bộ sưu tập
+          .where('placed', isEqualTo: placed) // Điều kiện tìm kiếm
+          .get();
+
+      List<ChatMessage> hotelMessages = []; // Danh sách tin nhắn khách sạn
+
+      if (snapshot.docs.isNotEmpty) {
+        // Lấy dữ liệu từ từng tài liệu
+        for (var doc in snapshot.docs) {
+          String name = doc.get('name') ?? "Không rõ tên khách sạn";
+          String detail =
+              doc.get('detail_placed') ?? "Không có thông tin chi tiết";
+
+          ChatMessage message = ChatMessage(
+            user: geminiUser,
+            createdAt: DateTime.now(),
+            text: "Khách sạn: $name\nChi tiết: $detail",
+          );
+
+          hotelMessages.add(message);
+        }
+      } else {
+        // Trường hợp không tìm thấy khách sạn
+        hotelMessages.add(ChatMessage(
+          user: geminiUser,
+          createdAt: DateTime.now(),
+          text: "Không tìm thấy khách sạn nào ở địa điểm: $placed.",
+        ));
+      }
+
+      // Cập nhật tin nhắn lên giao diện
+      setState(() {
+        messages = [...hotelMessages, ...messages];
+      });
+    } catch (e) {
+      // Xử lý lỗi
+      setState(() {
+        messages = [
+          ChatMessage(
+            user: geminiUser,
+            createdAt: DateTime.now(),
+            text: "Đã xảy ra lỗi khi tìm kiếm khách sạn. Vui lòng thử lại sau.",
+          ),
+          ...messages,
+        ];
+      });
+      print("Error searching hotels: $e");
+    }
+  }
+
+//Ham gửi tin nhắn
+  void _sendMessage(ChatMessage chatMessage) async {
     setState(() {
-      messages = [chatMessage, ...messages];
+      messages = [chatMessage, ...messages]; // Thêm tin nhắn vào danh sách
     });
     try {
       String question = chatMessage.text;
+
+      // Kiểm tra nếu câu hỏi liên quan đến tìm kiếm khách sạn
+      if (question.toLowerCase().contains("tìm khách sạn ở")) {
+        String location =
+            question.split("tìm khách sạn ở")[1].trim(); // Lấy địa điểm
+        await _searchHotels(location);
+        return; // Không gọi Gemini nếu tìm kiếm khách sạn
+      }
+
       List<Uint8List>? images;
       if (chatMessage.medias?.isNotEmpty ?? false) {
         images = [
           File(chatMessage.medias!.first.url).readAsBytesSync(),
         ];
       }
+
       gemini
           .streamGenerateContent(
         question,
@@ -229,6 +281,7 @@ class _GeminiChatState extends State<ChatBot> {
     }
   }
 
+//Ham gui anh
   void _sendMediaMessage() async {
     ImagePicker picker = ImagePicker();
     XFile? file = await picker.pickImage(

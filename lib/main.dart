@@ -11,8 +11,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   Gemini.init(apiKey: ChatBot_API_KEY);
+
   runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,
-    home: SplashScreen(),
+    home: Mainscreen(),
   ));
 }

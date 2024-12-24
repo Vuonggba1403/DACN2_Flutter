@@ -5,11 +5,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/painting.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../information_screen/information_addTour.dart';
@@ -17,16 +16,13 @@ import '../information_screen/information_history.dart';
 import '../other/searchcar.dart';
 import '../utils/colors.dart';
 import '../utils/custom_container.dart';
-import '../utils/custom_derlight_toast_bar.dart';
 import '../utils/image_utils.dart';
 import '../utils/loading_screen.dart';
 import 'Authentication/login_screen.dart';
 import 'discount_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({
-    super.key,
-  });
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -36,8 +32,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Uint8List? _image;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  bool isLoggedInWithFacebook = false;
 
-  //change image
+  // Change image
   void selectImage() async {
     Uint8List img = await pickImage(ImageSource.gallery);
     setState(() {
@@ -45,7 +42,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-//save name
+  // Get user data from Firestore
   Future<Map<String, dynamic>?> _getUserData() async {
     final user = _auth.currentUser;
     if (user != null) {
@@ -55,6 +52,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return null;
   }
 
+  // Delete account
   void _deleteAccount(BuildContext context) async {
     final user = _auth.currentUser;
 
@@ -62,7 +60,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       try {
         // Delete user document from Firestore
         await _firestore.collection('users').doc(user.uid).delete();
-
         // Delete user from Firebase Authentication
         await user.delete();
 
@@ -75,11 +72,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: Colors.red[400],
               ),
               child: const Center(
-                  child: Text(
-                "Tài Khoản Của Bạn Đã Được Xoá Vĩnh Viễn",
-                style: TextStyle(
-                    color: Colors.black, fontFamily: "OpenSans", fontSize: 15),
-              )),
+                child: Text(
+                  "Tài Khoản Của Bạn Đã Được Xoá Vĩnh Viễn",
+                  style: TextStyle(
+                      color: Colors.black,
+                      fontFamily: "OpenSans",
+                      fontSize: 15),
+                ),
+              ),
             ),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.transparent,
@@ -89,7 +89,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
         loadingScreen(context, () => const LoginScreen());
       } catch (e) {
-        // print("Xóa tài khoản thất bại: $e");
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Container(
@@ -99,11 +98,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: Colors.red[400],
               ),
               child: const Center(
-                  child: Text(
-                "Không thể xóa tài khoản của bạn. Vui lòng thử lại sau.",
-                style: TextStyle(
-                    color: Colors.black, fontFamily: "OpenSans", fontSize: 15),
-              )),
+                child: Text(
+                  "Không thể xóa tài khoản của bạn. Vui lòng thử lại sau.",
+                  style: TextStyle(
+                      color: Colors.black,
+                      fontFamily: "OpenSans",
+                      fontSize: 15),
+                ),
+              ),
             ),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.transparent,
@@ -113,6 +115,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       }
     }
+  }
+
+  // Get user data from Google
+  Future<Map<String, dynamic>?> _getGoogleUserData() async {
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser != null) {
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
+        return {
+          'name': googleUser.displayName,
+          'email': googleUser.email,
+        };
+      }
+      return null;
+    } catch (error) {
+      print("Lỗi khi lấy dữ liệu Google: $error");
+      return null;
+    }
+  }
+
+  // Get user data from Facebook
+  Future<Map<String, dynamic>?> _getFacebookUserData() async {
+    try {
+      final userData = await FacebookAuth.instance.getUserData();
+      return userData; // Trả về dữ liệu người dùng
+    } catch (error) {
+      print("Lỗi khi lấy dữ liệu Facebook: $error");
+      return null;
+    }
+  }
+
+  // Check login status
+  Future<void> checkLoginStatus() async {
+    final accessToken = await FacebookAuth.instance.accessToken;
+    setState(() {
+      isLoggedInWithFacebook = accessToken != null;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    checkLoginStatus();
   }
 
   @override
@@ -158,27 +204,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   Positioned(
-                      left: 50,
-                      top: 70,
-                      child: Container(
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(100),
-                            border: Border.all(color: Colors.yellow, width: 3)),
-                        child: _image != null
-                            ? CircleAvatar(
-                                radius: 60,
-                                backgroundImage: MemoryImage(_image!))
-                            : const CircleAvatar(
-                                radius: 60,
-                                backgroundColor: Colors.white,
-                                backgroundImage:
-                                    AssetImage("assets/images/user_image.png")),
-                      )),
+                    left: 50,
+                    top: 70,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(100),
+                        border: Border.all(color: Colors.yellow, width: 3),
+                      ),
+                      child: _image != null
+                          ? CircleAvatar(
+                              radius: 60, backgroundImage: MemoryImage(_image!))
+                          : const CircleAvatar(
+                              radius: 60,
+                              backgroundColor: Colors.white,
+                              backgroundImage:
+                                  AssetImage("assets/images/user_image.png")),
+                    ),
+                  ),
                   Positioned(
                     left: 130,
                     top: 160,
                     child: GestureDetector(
-                      onTap: () => {selectImage()},
+                      onTap: () => selectImage(),
                       child: const Icon(
                         Icons.add_a_photo,
                         size: 30,
@@ -186,96 +233,87 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                   ),
+                  // Check user name and email
+                  Positioned(
+                    left: 200,
+                    top: 120,
+                    child: FutureBuilder<Map<String, dynamic>?>(
+                      future: isLoggedInWithFacebook
+                          ? _getFacebookUserData()
+                          : _getGoogleUserData(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const CircularProgressIndicator();
+                        } else if (snapshot.hasError) {
+                          return const Text(
+                            "Có lỗi xảy ra.",
+                            style: TextStyle(color: Colors.white),
+                          );
+                        } else if (!snapshot.hasData || snapshot.data == null) {
+                          return const Text(
+                            "Không có dữ liệu.",
+                            style: TextStyle(color: Colors.white),
+                          );
+                        } else {
+                          final userData = snapshot.data!;
+                          final userName = userData['name'] ?? "Tên người dùng";
+                          final userEmail =
+                              userData['email'] ?? "Email không có sẵn";
 
-                  // check name user
-                  //   Positioned(
-                  //     left: 200,
-                  //     top: 120,
-                  //     child: FutureBuilder<Map<String, dynamic>?>(
-                  //       future: _getUserData(),
-                  //       builder: (context, snapshot) {
-                  //         if (snapshot.connectionState ==
-                  //             ConnectionState.waiting) {
-                  //           return const SpinKitCubeGrid(
-                  //             duration: Duration(milliseconds: 1200),
-                  //             color: Colors.white,
-                  //           );
-                  //         } else {
-                  //           final userData = snapshot.data!;
-                  //           final userName = userData['name'] ?? "Tên người dùng";
-                  //           return Column(
-                  //             crossAxisAlignment: CrossAxisAlignment.start,
-                  //             children: [
-                  //               Text(
-                  //                 userName,
-                  //                 style: const TextStyle(
-                  //                   fontSize: 15,
-                  //                   fontWeight: FontWeight.bold,
-                  //                   color: Colors.white,
-                  //                   fontFamily: "OpenSans",
-                  //                 ),
-                  //               ),
-                  //               GestureDetector(
-                  //                 onTap: () => showCustomDelightToastBar(
-                  //                     context, "Chưa làm ! "),
-                  //                 child: const Row(
-                  //                   children: [
-                  //                     Text(
-                  //                       "Thông tin cá nhân",
-                  //                       style: TextStyle(
-                  //                         fontSize: 15,
-                  //                         color: Colors.white,
-                  //                         fontFamily: "OpenSans",
-                  //                       ),
-                  //                     ),
-                  //                     SizedBox(
-                  //                       width: 10,
-                  //                     ),
-                  //                     FaIcon(
-                  //                       FontAwesomeIcons.chevronRight,
-                  //                       size: 30,
-                  //                       color: Colors.white,
-                  //                     ),
-                  //                   ],
-                  //                 ),
-                  //               ),
-                  //             ],
-                  //           );
-                  //         }
-                  //       },
-                  //     ),
-                  //   ),
-                  // ],
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                userName,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  fontFamily: "OpenSans",
+                                ),
+                              ),
+                              Text(
+                                userEmail,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.white,
+                                  fontFamily: "OpenSans",
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+                      },
+                    ),
+                  ),
                 ],
               ),
             ),
-            const SizedBox(
-              height: 20,
-            ),
+            const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                //contact
+                // Contact
                 GestureDetector(
-                    onTap: () => showDialog(
-                          builder: (context) => const DiscountPage(),
-                          barrierDismissible: false,
-                          context: context,
-                        ),
-                    child: const UserInfoContainer(
-                        iconData: Icons.discount, text: "Voucher")),
+                  onTap: () => showDialog(
+                    builder: (context) => const DiscountPage(),
+                    barrierDismissible: false,
+                    context: context,
+                  ),
+                  child: const UserInfoContainer(
+                      iconData: Icons.discount, text: "Voucher"),
+                ),
                 GestureDetector(
                   onTap: () {
-                    loadingScreen(context, () => const HistoryScreen());
+                    loadingScreen(context, () => const InformationBuyTicket());
                   },
                   child: const UserInfoContainer(
-                      iconData: FontAwesomeIcons.clock, text: "L/s đặt KS"),
+                      iconData: FontAwesomeIcons.clock, text: "L/s chuyến đi"),
                 ),
               ],
             ),
-            const SizedBox(
-              height: 20,
-            ),
+            const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -295,13 +333,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ],
             ),
-            const SizedBox(
-              height: 20,
-            ),
+            const SizedBox(height: 20),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // delete account
+                // Delete account
                 GestureDetector(
                   onTap: () => showDialog(
                     builder: (context) => AlertDialog(
@@ -317,49 +353,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       actions: [
                         Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              TextButton(
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                  child: Text(
-                                    "Đóng",
-                                    style: TextStyle(
-                                        color: primaryColor,
-                                        fontFamily: "OpenSans",
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.bold),
-                                  )),
-                              TextButton(
-                                  onPressed: () {
-                                    _deleteAccount(context);
-                                  },
-                                  child: const Text(
-                                    "Chắc Chắn",
-                                    style: TextStyle(
-                                        color: Colors.red,
-                                        fontFamily: "OpenSans",
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.bold),
-                                  ))
-                            ]),
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: Text(
+                                "Đóng",
+                                style: TextStyle(
+                                  color: primaryColor,
+                                  fontFamily: "OpenSans",
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                _deleteAccount(context);
+                              },
+                              child: const Text(
+                                "Chắc Chắn",
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontFamily: "OpenSans",
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                     barrierDismissible: false,
                     context: context,
                   ),
                   child: const UserInfoContainer(
-                      iconData: FontAwesomeIcons.userTimes,
-                      text: "Xoá tài khoản"),
-                ),
-
-                GestureDetector(
-                  onTap: () {
-                    loadingScreen(context, () => const InformationBuyTicket());
-                  },
-                  child: const UserInfoContainer(
-                      iconData: FontAwesomeIcons.clock, text: "L/s chuyến đi"),
+                    iconData: FontAwesomeIcons.userTimes,
+                    text: "Xoá tài khoản",
+                  ),
                 ),
               ],
             ),

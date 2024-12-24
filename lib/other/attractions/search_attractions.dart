@@ -377,7 +377,7 @@ class _SearchAttractionsState extends State<SearchAttractions> {
                       GestureDetector(
                         onTap: () {
                           Navigator.pop(
-                              context, 'Tour tham quan VKU Dream Fitness');
+                              context, 'Tour tham gia Trường Đại Học Việt Hàn');
                         },
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
@@ -399,7 +399,7 @@ class _SearchAttractionsState extends State<SearchAttractions> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    "Tour tham quan VKU Dream Fitness và giao lưu cùng các idol",
+                                    "Tour tham gia Trường Đại Học Việt Hàn",
                                     style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w700),

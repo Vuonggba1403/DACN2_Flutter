@@ -3,7 +3,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:travelapp_flutter/information_screen/information_addTour.dart';
 import 'package:travelapp_flutter/other/help.dart';
+import 'package:travelapp_flutter/screens/discount_screen.dart';
 
 import '../components/attractions/search_bar_attractions.dart';
 import '../components/stays/search_bar_stays.dart';
@@ -35,14 +37,14 @@ class _HomePageState extends State<SearchPage> {
     List<IconData> icons = [
       Icons.bed_sharp,
       Icons.car_rental,
-      FontAwesomeIcons.heart,
+      Icons.discount,
       Icons.attractions_outlined
     ];
 
     List<String> features = [
       "Lưu trú",
       "Thuê xe",
-      "Đã thích",
+      "Voucher",
       "Địa điểm tham quan"
     ];
 
@@ -55,7 +57,7 @@ class _HomePageState extends State<SearchPage> {
 
         // favorite
         case 2:
-          loadingScreen(context, () => FavoriteScreen());
+          loadingScreen(context, () => const DiscountPage());
           break;
 
         // Stays and attractions

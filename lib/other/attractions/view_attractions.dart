@@ -219,7 +219,7 @@ class _ViewAttractionsState extends State<ViewAttractions> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w400),
           ),
           const Text(
-            ' . 30 tháng 2',
+            ' . 25 tháng 12',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w400),
           ),
         ],

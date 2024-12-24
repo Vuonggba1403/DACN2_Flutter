@@ -23,13 +23,13 @@ class DiscountPage extends StatelessWidget {
             },
             icon: const FaIcon(
               FontAwesomeIcons.arrowLeft,
-              color: Colors.orange,
+              color: Colors.white,
             )),
         title: const Text(
           'Voucher',
-          style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: ColorsText,
+        backgroundColor: primaryColor,
       ),
       body: StreamBuilder(
           stream: FirebaseFirestore.instance.collection('Discount').snapshots(),

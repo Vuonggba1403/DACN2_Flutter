@@ -4,10 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:lottie/lottie.dart';
 import 'package:travelapp_flutter/information_screen/information_history.dart';
+import 'package:travelapp_flutter/information_screen/notification_firebase.dart';
 import 'package:travelapp_flutter/models/model_news.dart';
-import 'package:travelapp_flutter/screens/map_with_customer_window.dart';
 import 'package:travelapp_flutter/screens/news.dart';
-
 import 'favorite_screen.dart';
 import '../utils/loading_screen.dart';
 import 'ChatBot/chatbot.dart';
@@ -109,11 +108,11 @@ class _MainscreenState extends State<Mainscreen> {
   ];
 
   final screen = [
-    SearchPage(),
-    FavoriteScreen(),
-    NewsPage(),
-    HistoryScreen(),
-    ProfileScreen(),
+    const SearchPage(),
+    const FavoriteScreen(),
+    const NewsPage(),
+    const HistoryScreen(),
+    const ProfileScreen(),
   ];
   @override
   Widget build(BuildContext context) {
@@ -166,7 +165,10 @@ class _MainscreenState extends State<Mainscreen> {
                                       FontAwesomeIcons.bell,
                                       color: Colors.orange,
                                     ),
-                                    onPressed: () {},
+                                    onPressed: () {
+                                      loadingScreen(context,
+                                          () => const NotificationScreen());
+                                    },
                                   ),
                                 ],
                               ),
@@ -179,11 +181,6 @@ class _MainscreenState extends State<Mainscreen> {
 
           //body screen
           body: screen[index]),
-
-      // for google map
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-
-      floatingActionButton: const MapWithCustomerWindow(),
 
       //NavigationBar
       bottomNavigationBar: CurvedNavigationBar(
