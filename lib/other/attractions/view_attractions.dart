@@ -8,6 +8,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../components/attractions/view_attractions_card.dart';
 import '../../components/attractions/view_attractions_filter.dart';
 import '../../components/attractions/view_attractions_sort.dart';
+import 'package:intl/intl.dart';
 
 class ViewAttractions extends StatefulWidget {
   const ViewAttractions({super.key});
@@ -196,8 +197,11 @@ class _ViewAttractionsState extends State<ViewAttractions> {
   }
 
   Widget buildSearchBar() {
+    DateTime now = DateTime.now();
+    // Định dạng ngày
+    String formattedDate = DateFormat('dd/MM/yyyy').format(now);
     return Container(
-      padding: const EdgeInsets.all(5),
+      padding: const EdgeInsets.all(1),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(
@@ -218,8 +222,8 @@ class _ViewAttractionsState extends State<ViewAttractions> {
             'Đà Nẵng',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w400),
           ),
-          const Text(
-            ' . 25 tháng 12',
+          Text(
+            ' . $formattedDate',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w400),
           ),
         ],

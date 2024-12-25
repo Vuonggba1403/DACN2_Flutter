@@ -218,10 +218,65 @@ class _GeminiChatState extends State<ChatBot> {
     }
   }
 
+  //
+  // Hàm tìm kiếm khách sạn theo địa điểm
+  Future<void> _searchTours(String placed) async {
+    try {
+      // Truy vấn Firestore dựa trên trường `placed`
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('Placed') // Tên bộ sưu tập
+          .where('placed', isEqualTo: placed) // Điều kiện tìm kiếm
+          .get();
+
+      List<ChatMessage> hotelMessages = []; // Danh sách tin nhắn khách sạn
+
+      if (snapshot.docs.isNotEmpty) {
+        // Lấy dữ liệu từ từng tài liệu
+        for (var doc in snapshot.docs) {
+          String money = doc.get('money') ?? "Không rõ !";
+          String detail = doc.get('des') ?? "Không có thông tin chi tiết";
+
+          ChatMessage message = ChatMessage(
+            user: geminiUser,
+            createdAt: DateTime.now(),
+            text: "Giá: $money VND \n Chi tiết tour: $detail",
+          );
+
+          hotelMessages.add(message);
+        }
+      } else {
+        // Trường hợp không tìm thấy tour
+        hotelMessages.add(ChatMessage(
+          user: geminiUser,
+          createdAt: DateTime.now(),
+          text: "Không tìm thấy tour nào ở địa điểm: $placed.",
+        ));
+      }
+
+      // Cập nhật tin nhắn lên giao diện
+      setState(() {
+        messages = [...hotelMessages, ...messages];
+      });
+    } catch (e) {
+      // Xử lý lỗi
+      setState(() {
+        messages = [
+          ChatMessage(
+            user: geminiUser,
+            createdAt: DateTime.now(),
+            text: "Đã xảy ra lỗi khi tìm kiếm tour. Vui lòng thử lại sau.",
+          ),
+          ...messages,
+        ];
+      });
+      print("Error searching tours: $e");
+    }
+  }
+
 //Ham gửi tin nhắn
   void _sendMessage(ChatMessage chatMessage) async {
     setState(() {
-      messages = [chatMessage, ...messages]; // Thêm tin nhắn vào danh sách
+      messages = [chatMessage, ...messages];
     });
     try {
       String question = chatMessage.text;
@@ -231,6 +286,14 @@ class _GeminiChatState extends State<ChatBot> {
         String location =
             question.split("tìm khách sạn ở")[1].trim(); // Lấy địa điểm
         await _searchHotels(location);
+        return; // Không gọi Gemini nếu tìm kiếm khách sạn
+      }
+
+      // Kiểm tra nếu câu hỏi liên quan đến tìm kiếm tour
+      if (question.toLowerCase().contains("tìm tour ở")) {
+        String location =
+            question.split("tìm tour ở")[1].trim(); // Lấy địa điểm
+        await _searchTours(location);
         return; // Không gọi Gemini nếu tìm kiếm khách sạn
       }
 
@@ -281,7 +344,6 @@ class _GeminiChatState extends State<ChatBot> {
     }
   }
 
-//Ham gui anh
   void _sendMediaMessage() async {
     ImagePicker picker = ImagePicker();
     XFile? file = await picker.pickImage(
