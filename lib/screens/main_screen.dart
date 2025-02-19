@@ -5,7 +5,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:lottie/lottie.dart';
 import 'package:travelapp_flutter/information_screen/information_history.dart';
 import 'package:travelapp_flutter/information_screen/notification_firebase.dart';
-import 'package:travelapp_flutter/models/model_news.dart';
 import 'package:travelapp_flutter/screens/news.dart';
 import 'favorite_screen.dart';
 import '../utils/loading_screen.dart';
